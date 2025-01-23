@@ -12,10 +12,10 @@ const FIRELIES_WEBHOOK_SECRET = process.env.FIRELIES_WEBHOOK_SECRET;
 console.log(FIRELIES_WEBHOOK_SECRET);
 
 // Fireflies GraphQL API endpoint and headers
-const FIRELIES_GRAPHQL_URL = "https://api.fireflies.ai/graphql";
-const FIRELIES_API_KEY = process.env.FIRELIES_API_KEY; // Replace with your actual API key
+const url = "https://api.fireflies.ai/graphql";
+const FIRELIES_API_KEY = process.env.FIRELIES_API_KEY;
 console.log(FIRELIES_API_KEY);
-const HEADERS = {
+const headers = {
   "Content-Type": "application/json",
   Authorization: `Bearer ${FIRELIES_API_KEY}`,
 };
@@ -23,43 +23,44 @@ const HEADERS = {
 // Endpoint to receive webhook
 app.post("/fireflies-webhook", async (req, res) => {
   const signature = req.headers["x-hub-signature"];
+  if (!signature) {
+    console.error("Missing signature header");
+    return res.status(400).send("Missing signature header");
+  }
   const payload = JSON.stringify(req.body);
 
-  // Verify the signature
   const hash = crypto
     .createHmac("sha256", FIRELIES_WEBHOOK_SECRET)
     .update(payload)
     .digest("hex");
 
   if (signature !== hash) {
+    console.error("Signature mismatch");
     return res.status(401).send("Invalid signature");
   }
 
   // Process the webhook data
+  const { transcriptId, status } = req.body;
   const event = req.body;
   console.log(event);
-  const { transcriptionId, status } = req.body;
-  console.log(`Transcription ID: ${transcriptionId}, Status: ${status}`);
+  console.log(`Transcript ID: ${transcriptId}, Status: ${status}`);
 
   // Check if transcription is complete
-  if (status === "completed") {
-    console.log(`Fetching data for Transcription ID: ${transcriptionId}`);
+//   if (status === "completed") {
+    console.log(`Fetching data for Transcription ID: ${transcriptId}`);
     try {
-      // Fetch data using Fireflies GraphQL API
-      const data = await fetchTranscriptData(transcriptionId);
-      console.log("Transcription Data:", JSON.stringify(data, null, 2)); // Log the fetched data
+      await fetchTranscriptData(transcriptId);
     } catch (error) {
       console.error("Error fetching transcript data:", error);
     }
-  }
-
+//   } 
   res.status(200).send("Webhook received");
 });
 
 // Function to fetch transcription data using GraphQL
-async function fetchTranscriptData(transcriptionId) {
-  const query = `
-    query Transcript($transcriptId: String!) {
+async function fetchTranscriptData(transcriptId) {
+  const data = {
+    query: `query Transcript($transcriptId: String!) {
       transcript(id: $transcriptId) {
         id
         title
@@ -94,24 +95,24 @@ async function fetchTranscriptData(transcriptionId) {
           topics_discussed
         }
       }
-    }
-  `;
+    }`,
+    variables: { transcriptId },
+  };
 
-  const variables = { transcriptId };
-
-  const response = await axios.post(
-    FIRELIES_GRAPHQL_URL,
-    { query, variables },
-    { headers: HEADERS }
-  );
-
-  if (response.data.errors) {
-    throw new Error(`GraphQL Errors: ${JSON.stringify(response.data.errors)}`);
-  }
-
-  return response.data.data.transcript;
+  axios
+    .post(url, data, { headers: headers })
+    .then(response => {
+      console.log(JSON.stringify(response.data, null, 2));
+    })
+    .catch(error => {
+      if (error.response) {
+        console.error("Axios Error Response:", error.response.data);
+      } else {
+        console.error("Error:", error.message);
+      }
+    });
 }
 
 // Start the server
-const PORT = 3000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
