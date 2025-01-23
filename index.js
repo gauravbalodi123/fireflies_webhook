@@ -29,29 +29,32 @@ app.post("/fireflies-webhook", async (req, res) => {
   }
   const payload = JSON.stringify(req.body);
 
-  const hash = "sha256=" + crypto.createHmac("sha256", FIRELIES_WEBHOOK_SECRET).update(payload).digest("hex");
-
+  const hash =
+    "sha256=" +
+    crypto.createHmac("sha256", FIRELIES_WEBHOOK_SECRET).update(payload).digest("hex");
 
   if (signature !== hash) {
     console.error("Signature mismatch");
     return res.status(401).send("Invalid signature");
   }
 
-  // Process the webhook data
-  const { transcriptId, status } = req.body;
+  // Extracting meetingId and eventType
   const event = req.body;
   console.log(event);
-  console.log(`Transcript ID: ${transcriptId}, Status: ${status}`);
+  const { meetingId, eventType } = req.body;
+  console.log(`Received event: Meeting ID: ${meetingId}, Event Type: ${eventType}`);
 
-  // Check if transcription is complete
-//   if (status === "completed") {
-    console.log(`Fetching data for Transcription ID: ${transcriptId}`);
+  // Check if the event type is "Transcription completed"
+  if (eventType === "Transcription completed") {
+    console.log(`Fetching data for Meeting ID: ${meetingId}`);
     try {
-      await fetchTranscriptData(transcriptId);
+      // Use the meetingId in place of transcriptId
+      await fetchTranscriptData(meetingId);
     } catch (error) {
       console.error("Error fetching transcript data:", error);
     }
-//   } 
+  }
+
   res.status(200).send("Webhook received");
 });
 
@@ -99,10 +102,10 @@ async function fetchTranscriptData(transcriptId) {
 
   axios
     .post(url, data, { headers: headers })
-    .then(response => {
+    .then((response) => {
       console.log(JSON.stringify(response.data, null, 2));
     })
-    .catch(error => {
+    .catch((error) => {
       if (error.response) {
         console.error("Axios Error Response:", error.response.data);
       } else {
