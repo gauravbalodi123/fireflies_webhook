@@ -29,10 +29,8 @@ app.post("/fireflies-webhook", async (req, res) => {
   }
   const payload = JSON.stringify(req.body);
 
-  const hash = crypto
-    .createHmac("sha256", FIRELIES_WEBHOOK_SECRET)
-    .update(payload)
-    .digest("hex");
+  const hash = "sha256=" + crypto.createHmac("sha256", FIRELIES_WEBHOOK_SECRET).update(payload).digest("hex");
+
 
   if (signature !== hash) {
     console.error("Signature mismatch");
