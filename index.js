@@ -111,8 +111,8 @@ async function waitForSummary(transcriptId, interval = 5000, maxRetries = 12) {
       const transcript = await fetchTranscriptData(transcriptId);
 
       if (transcript.summary && transcript.summary.keywords) {
-        console.log("Summary is available:", transcript.summary);
-        return transcript; // Exit the loop and return the transcript
+        console.log("Transcript and Summary is available:", transcript);
+        return transcript; 
       } else {
         console.log("Summary not yet available, retrying...");
       }
