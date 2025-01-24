@@ -105,29 +105,17 @@ async function fetchTranscriptData(transcriptId) {
 }
 
 // Function to wait for the summary to be available
-async function waitForSummary(transcriptId, interval = 5000, maxRetries = 12) {
+async function waitForSummary(transcriptId, interval = 9000, maxRetries = 12) {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const transcript = await fetchTranscriptData(transcriptId);
 
-      // if (transcript.summary && transcript.summary.keywords) {
-      //   console.log("Transcript and Summary is available:", transcript);
-      //   return transcript; 
-      // } else {
-      //   console.log("Summary not yet available, retrying...");
-      // }
-
-      if (
-        transcript.summary &&
-        Array.isArray(transcript.summary.keywords) &&
-        transcript.summary.keywords.length > 0
-      ) {
-        console.log("Transcript and Summary is available:", transcript);
-        return transcript; // Exit only if keywords are non-empty
+      if (transcript.summary && transcript.summary.keywords) {
+        console.log("Transcript and Summary is available:", transcript,transcript.summary);
+        return transcript; 
       } else {
-        console.log("Summary not yet available or incomplete, retrying...");
+        console.log("Summary not yet available, retrying...");
       }
-      
     } catch (error) {
       console.error("Error fetching transcript data:", error);
     }
